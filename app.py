@@ -1,276 +1,102 @@
 import streamlit as st
 from ultralytics import YOLO
 from PIL import Image
-import os
-import gdown
+import tempfile
 import base64
+import os
 
+MODEL_PATH = "weights/best.pt"
+BG_PATH = "sample_images/bg.jpg"
 
-# ---------------- MODEL DOWNLOAD ----------------
-
-MODEL_PATH = "best.pt"
-
-FILE_ID = "1G1nZ-6TPcdAHyIOyo6Mgvrsqsckx37i1"
-
-if not os.path.exists(MODEL_PATH):
-    gdown.download(
-        id=FILE_ID,
-        output=MODEL_PATH,
-        quiet=False
-    )
-
-
-# Load YOLO model
 model = YOLO(MODEL_PATH)
 
 def add_bg(image_file):
-    with open(image_file, "rb") as file:
-        encoded = base64.b64encode(file.read()).decode()
+    if os.path.exists(image_file):
+        with open(image_file, "rb") as file:
+            encoded = base64.b64encode(file.read()).decode()
 
-    st.markdown(
-        f"""
-        <style>
-        [data-testid="stAppViewContainer"] {{
-            background-image:
-            linear-gradient(
-                rgba(0,0,0,0.65),
-                rgba(0,0,0,0.65)
-            ),
-            url("data:image/jpg;base64,{encoded}");
+        st.markdown(
+            f"""
+            <style>
+            .stApp {{
+                background-image: url("data:image/jpg;base64,{encoded}");
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
+            }}
+            .main-box {{
+                background-color: rgba(255,255,255,0.88);
+                padding: 25px;
+                border-radius: 15px;
+            }}
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
 
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }}
+add_bg(BG_PATH)
 
-        [data-testid="stHeader"] {{
-            background: transparent;
-        }}
+st.markdown('<div class="main-box">', unsafe_allow_html=True)
 
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-add_bg("bg.jpg")
-
-# ---------------- APP TITLE ----------------
-
-st.title("🌴 Palm Oil Leaf Nutrient Stress Detection")
-
-st.write(
-    "Upload a palm oil leaf image to detect nutrient stress"
-)
-
-
-# ---------------- LANGUAGE ----------------
+st.title("🌴 Palm Oil Leaf Disease Detection")
 
 language = st.selectbox(
-    "Select Language / భాష ఎంచుకోండి",
-    [
-        "English",
-        "Telugu",
-        "Hindi",
-        "Tamil"
-    ]
+    "Select Language",
+    ["English", "Hindi", "Telugu"]
 )
 
-
-# ---------------- REMEDIES ----------------
-
-remedies = {
-
-    "boron": {
-
-        "English":
-        "Boron deficiency detected. Use Borax or Solubor fertilizer in recommended quantity.",
-
-        "Telugu":
-        "బోరాన్ లోపం కనిపించింది. బోరాక్స్ లేదా సోలుబోర్ ఎరువును వాడండి.",
-
-        "Hindi":
-        "बोरॉन की कमी पाई गई है। Borax या Solubor खाद उपयोग करें।",
-
-        "Tamil":
-        "போரான் குறைபாடு கண்டறியப்பட்டது. Borax அல்லது Solubor பயன்படுத்தவும்."
+solutions = {
+    "English": {
+        "Boron": "Boron deficiency detected. Apply boron-rich fertilizer carefully as per agricultural recommendation.",
+        "Healthy": "The leaf looks healthy. Continue regular monitoring and good crop management.",
+        "Kalium": "Potassium deficiency detected. Apply potassium-based fertilizer to improve plant strength.",
+        "Mg": "Magnesium deficiency detected. Use magnesium sulphate or suitable Mg fertilizer.",
+        "Nitrogen": "Nitrogen deficiency detected. Apply nitrogen-rich fertilizer in proper quantity."
     },
-
-
-    "nitrogen": {
-
-        "English":
-        "Nitrogen deficiency detected. Use Urea or nitrogen-rich fertilizer.",
-
-        "Telugu":
-        "నైట్రోజన్ లోపం కనిపించింది. యూరియా వంటి ఎరువును వాడండి.",
-
-        "Hindi":
-        "नाइट्रोजन की कमी है। Urea fertilizer उपयोग करें।",
-
-        "Tamil":
-        "நைட்ரஜன் குறைபாடு உள்ளது. Urea பயன்படுத்தவும்."
+    "Hindi": {
+        "Boron": "बोरॉन की कमी पाई गई है। कृषि सलाह के अनुसार बोरॉन युक्त उर्वरक का उपयोग करें।",
+        "Healthy": "पत्ता स्वस्थ दिखाई दे रहा है। नियमित निगरानी जारी रखें।",
+        "Kalium": "पोटैशियम की कमी पाई गई है। पोटैशियम आधारित उर्वरक का उपयोग करें।",
+        "Mg": "मैग्नीशियम की कमी पाई गई है। मैग्नीशियम सल्फेट या उपयुक्त Mg उर्वरक का उपयोग करें।",
+        "Nitrogen": "नाइट्रोजन की कमी पाई गई है। सही मात्रा में नाइट्रोजन युक्त उर्वरक का उपयोग करें।"
     },
-
-
-    "magnesium": {
-
-        "English":
-        "Magnesium deficiency detected. Use Magnesium sulphate.",
-
-        "Telugu":
-        "మెగ్నీషియం లోపం కనిపించింది. మెగ్నీషియం సల్ఫేట్ వాడండి.",
-
-        "Hindi":
-        "मैग्नीशियम की कमी है। Magnesium sulphate उपयोग करें।",
-
-        "Tamil":
-        "மக்னீசியம் குறைபாடு உள்ளது. Magnesium sulphate பயன்படுத்தவும்."
-    },
-
-
-    "kalium": {
-
-        "English":
-        "Potassium deficiency detected. Use MOP or Potash fertilizer.",
-
-        "Telugu":
-        "పొటాషియం లోపం కనిపించింది. పొటాష్ ఎరువును వాడండి.",
-
-        "Hindi":
-        "पोटैशियम की कमी है। Potash fertilizer उपयोग करें।",
-
-        "Tamil":
-        "பொட்டாசியம் குறைபாடு உள்ளது. Potash உரம் பயன்படுத்தவும்."
-    },
-
-
-    "healthy": {
-
-        "English":
-        "Leaf looks healthy. No treatment required.",
-
-        "Telugu":
-        "ఆకు ఆరోగ్యంగా ఉంది. మందు అవసరం లేదు.",
-
-        "Hindi":
-        "पत्ता स्वस्थ है। किसी उपचार की आवश्यकता नहीं है।",
-
-        "Tamil":
-        "இலை ஆரோக்கியமாக உள்ளது. மருந்து தேவையில்லை."
+    "Telugu": {
+        "Boron": "బోరాన్ లోపం గుర్తించబడింది. వ్యవసాయ సూచనల ప్రకారం బోరాన్ ఎరువును ఉపయోగించండి.",
+        "Healthy": "ఆకు ఆరోగ్యంగా ఉంది. పంటను క్రమం తప్పకుండా పరిశీలించండి.",
+        "Kalium": "పొటాషియం లోపం గుర్తించబడింది. పొటాషియం ఎరువును ఉపయోగించండి.",
+        "Mg": "మెగ్నీషియం లోపం గుర్తించబడింది. మెగ్నీషియం సల్ఫేట్ లేదా సరైన Mg ఎరువును ఉపయోగించండి.",
+        "Nitrogen": "నైట్రోజన్ లోపం గుర్తించబడింది. సరైన పరిమాణంలో నైట్రోజన్ ఎరువును ఉపయోగించండి."
     }
 }
 
-
-
-# ---------------- IMAGE UPLOAD ----------------
-
 uploaded_file = st.file_uploader(
-    "Choose Palm Leaf Image",
-    type=[
-        "jpg",
-        "jpeg",
-        "png"
-    ]
+    "Upload Palm Oil Leaf Image",
+    type=["jpg", "jpeg", "png"]
 )
 
-
-
 if uploaded_file is not None:
-
-
-    # Open image
     image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded Image", use_container_width=True)
 
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+        image.save(tmp.name)
+        results = model.predict(source=tmp.name, conf=0.25)
 
-    # Prediction
-    results = model(image)
+    result = results[0]
+    st.image(result.plot(), caption="Detection Result", use_container_width=True)
 
+    if len(result.boxes) > 0:
+        st.subheader("Prediction and Solution")
 
-    # Bounding box image
-    detected_image = results[0].plot()
-
-
-
-    # SIDE BY SIDE VIEW
-
-    col1, col2 = st.columns(2)
-
-
-    with col1:
-
-        st.subheader("Before 🌿")
-
-        st.image(
-            image,
-            caption="Original Leaf",
-            use_container_width=True
-        )
-
-
-
-    with col2:
-
-        st.subheader("After 🤖")
-
-        st.image(
-            detected_image,
-            caption="AI Detection Result",
-            use_container_width=True
-        )
-
-
-
-
-    # ---------------- RESULT ----------------
-
-
-    if len(results[0].boxes) > 0:
-
-
-        for box in results[0].boxes:
-
-
-            class_id = int(box.cls[0])
-
+        for box in result.boxes:
+            cls_id = int(box.cls[0])
+            class_name = model.names[cls_id]
             confidence = float(box.conf[0])
 
-
-            class_name = model.names[class_id]
-
-            class_key = class_name.lower().strip()
-
-
-
-            st.success(
-                f"Detected Disease: {class_name}"
-            )
-
-
-            st.info(
-                f"Confidence: {confidence*100:.2f}%"
-            )
-
-
-            st.subheader(
-                "Recommended Solution 💊"
-            )
-
-
-            solution = remedies.get(
-                class_key,
-                {}
-            ).get(
-                language,
-                "Solution not available"
-            )
-
-
-            st.write(solution)
-
-
-
+            st.success(f"Disease: {class_name}")
+            st.info(f"Confidence: {confidence:.2f}")
+            st.write(solutions[language].get(class_name, "Solution not available."))
     else:
+        st.warning("No disease detected.")
 
-        st.warning(
-            "No nutrient stress detected"
-        )
+st.markdown("</div>", unsafe_allow_html=True)

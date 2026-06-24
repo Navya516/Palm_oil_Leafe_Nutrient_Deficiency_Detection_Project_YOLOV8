@@ -1,9 +1,8 @@
 streamlit
-ultralytics==8.3.0
+ultralytics
 opencv-python-headless
 numpy
 pandas
 pillow
 torch
 torchvision
-gdown
